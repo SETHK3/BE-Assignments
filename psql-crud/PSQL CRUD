@@ -1,0 +1,88 @@
+CREATE DATABASE PSQLCRUD;
+
+-- HAD TO GOOGLE THIS / EXTENSION TO GENERATE UUID
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- SQL STATEMENT TO ESTABLISH FOREIGN KEY RELATIONSHIPS
+ALTER TABLE products
+ADD CONSTRAINT fk_company_id
+FOREIGN KEY (company_id)
+REFERENCES companies(company_id);
+
+
+-- CRUD FOR PRODUCTS TABLE
+CREATE TABLE IF NOT EXISTS products (
+    product_id UUID PRIMARY KEY,
+    company_id UUID REFERENCES companies(company_id),
+    company_name VARCHAR,
+    price INTEGER,
+    description VARCHAR,
+    active BOOLEAN
+);
+
+INSERT INTO products (product_id, company_id, company_name, price, description, active) VALUES (uuid_generate_v4(), '3019ab9d-f308-4c0a-b32c-331f12935c22', 'Apple', 900, 'iPhone', true);
+
+SELECT * FROM products;
+
+SELECT * FROM products WHERE active = true;
+
+SELECT * FROM products WHERE company_id = '3019ab9d-f308-4c0a-b32c-331f12935c22';
+
+SELECT * FROM products
+JOIN products_categories_xref ON products.product_id = products_categories_xref.product_id
+JOIN categories ON products_categories_xref.category_id = categories.category_id
+WHERE products.product_id = '2f39b9d9-d7c7-4b71-b2c1-255fb86dbc8f';
+
+UPDATE products SET price = 150, description = 'Nokia Brick Phone' WHERE product_id = '2f39b9d9-d7c7-4b71-b2c1-255fb86dbc8f';
+
+-- DROP CONSTRAINT TO ALLOW DELETE ON CASCADE
+ALTER TABLE products_categories_xref
+DROP CONSTRAINT products_categories_xref_product_id_fkey,
+ADD CONSTRAINT products_categories_xref_product_id_fkey
+FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE;
+
+DELETE FROM products WHERE product_id = '2f39b9d9-d7c7-4b71-b2c1-255fb86dbc8f';
+
+-- CRUD FOR COMPANIES TABLE
+CREATE TABLE IF NOT EXISTS companies (
+    company_id UUID PRIMARY KEY,
+    company_name VARCHAR NOT NULL
+);
+
+INSERT INTO companies (company_id, company_name) VALUES (uuid_generate_v4(), 'Apple');
+
+SELECT * FROM companies;
+
+SELECT * FROM companies WHERE company_id = '3019ab9d-f308-4c0a-b32c-331f12935c22'
+
+UPDATE companies SET company_name = 'Microsoft' WHERE company_id = '3019ab9d-f308-4c0a-b32c-331f12935c22';
+
+
+-- CRUD FOR PRODUCTS_CATEGORIES_XREF TABLE
+CREATE TABLE IF NOT EXISTS products_categories_xref (
+    product_id UUID REFERENCES products(product_id),
+    category_id UUID REFERENCES categories(category_id),
+    PRIMARY KEY (product_id, category_id)
+);
+
+INSERT INTO products_categories_xref (product_id, category_id) VALUES ('2f39b9d9-d7c7-4b71-b2c1-255fb86dbc8f', 'b27cd7f4-d793-429a-a346-09cb9dca173e');
+
+UPDATE products_categories_xref SET product_id = '2' WHERE product_id = '1';
+-- BEFORE I WAS UPDATING THE PRODUCT ID (FOREIGN KEY) IN THE 'products_categories_xref' TABLE BEFORE ENSURING THAT A NEW PRODUCT ID EXISTED IN THE 'products' TABLE. IF I WERE TO ADD THE NEW 'product_id' FROM THE 'products' TABLE AND RUN THIS STATEMENT IT WOULD SUCCESSFULLY UPDATE THE OLD ID SPECIFIED IN THE 'WHERE' CLAUSE OF THE QUERY. 
+
+-- CRUD FOR CATEGORIES TABLE
+CREATE TABLE IF NOT EXISTS categories (
+    category_id UUID PRIMARY KEY,
+    category_name VARCHAR NOT NULL
+);
+
+INSERT INTO categories (category_id, category_name) VALUES (uuid_generate_v4(), 'Lego');
+
+SELECT * FROM categories;
+
+SELECT * FROM categories
+JOIN products_categories_xref ON categories.category_id = products_categories_xref.category_id
+JOIN products ON products_categories_xref.product_id = products.product_id
+WHERE categories.category_id = 'b27cd7f4-d793-429a-a346-09cb9dca173e';
+
+UPDATE categories SET category_name = 'Puzzles' WHERE category_id = 'b27cd7f4-d793-429a-a346-09cb9dca173e';
